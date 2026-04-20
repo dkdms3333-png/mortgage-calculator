@@ -1,1 +1,506 @@
-file:///C:/Users/dkdms/Downloads/index.html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>주담대 스케줄러</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg: #f5f4f0;
+  --surface: #ffffff;
+  --surface2: #f0ede8;
+  --border: #e0dbd4;
+  --text: #1a1814;
+  --text2: #6b6660;
+  --text3: #a09c98;
+  --accent: #2c5f8a;
+  --accent2: #e8a84a;
+  --accent3: #4a9b6f;
+  --danger: #c0392b;
+  --rate-change: #dbeafe;
+  --prepay: #fef9c3;
+  --mono: 'DM Mono', monospace;
+  --sans: 'Noto Sans KR', sans-serif;
+  --radius: 10px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; }
+.app { max-width: 1100px; margin: 0 auto; padding: 24px 16px 60px; }
+
+/* Header */
+.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
+.header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+.header h1 span { color: var(--accent); }
+
+/* Cloud save bar */
+.cloud-bar { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; box-shadow: var(--shadow); }
+.cloud-bar .label { font-size: 12px; color: var(--text2); font-weight: 500; min-width: 60px; }
+.save-list { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+.save-chip { display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface2); font-size: 12px; cursor: pointer; transition: all 0.15s; }
+.save-chip:hover { border-color: var(--accent); color: var(--accent); }
+.save-chip .chip-del { width: 16px; height: 16px; border-radius: 50%; border: none; background: #ddd; color: #666; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; padding: 0; }
+.save-chip .chip-del:hover { background: var(--danger); color: #fff; }
+.cloud-actions { display: flex; gap: 8px; }
+.btn { padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 12px; font-family: var(--sans); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.btn:hover { background: var(--surface2); border-color: #ccc; }
+.btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn.primary:hover { background: #245079; }
+.btn.sm { padding: 5px 10px; font-size: 11px; }
+.save-input-row { display: flex; gap: 8px; align-items: center; }
+.save-input-row input { padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; font-family: var(--sans); background: var(--surface); color: var(--text); width: 160px; }
+.save-input-row input:focus { outline: none; border-color: var(--accent); }
+.cloud-status { font-size: 11px; color: var(--text3); }
+
+/* Grid layout */
+.top-grid { display: grid; grid-template-columns: 340px 1fr; gap: 16px; margin-bottom: 16px; }
+@media (max-width: 780px) { .top-grid { grid-template-columns: 1fr; } }
+
+/* Cards */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
+.card-title { font-size: 13px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; }
+
+/* Input fields */
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 11px; color: var(--text2); margin-bottom: 4px; font-weight: 500; }
+.field input { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: var(--mono); background: #fffef8; color: var(--text); transition: border 0.15s; }
+.field input:focus { outline: none; border-color: var(--accent); background: #fff; }
+
+/* Mini table for rate changes / prepays */
+.mini-table-wrap { margin-top: 4px; }
+.mini-table-header { display: grid; grid-template-columns: 1fr 1fr 28px; gap: 6px; margin-bottom: 4px; }
+.mini-table-header span { font-size: 10px; color: var(--text3); font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px; }
+.mini-row { display: grid; grid-template-columns: 1fr 1fr 28px; gap: 6px; margin-bottom: 4px; align-items: center; }
+.mini-row input { padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-family: var(--mono); background: #fffef8; color: var(--text); }
+.mini-row input:focus { outline: none; border-color: var(--accent); }
+.mini-del { width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface2); color: var(--text2); font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; transition: all 0.15s; }
+.mini-del:hover { background: #fee2e2; border-color: #fca5a5; color: var(--danger); }
+.add-row-btn { font-size: 11px; color: var(--accent); background: none; border: 1px dashed #b8d0e8; border-radius: 6px; padding: 4px 8px; cursor: pointer; width: 100%; margin-top: 4px; }
+.add-row-btn:hover { background: #f0f7ff; }
+
+/* Summary cards */
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.sum-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow); }
+.sum-card .s-label { font-size: 11px; color: var(--text2); margin-bottom: 6px; font-weight: 500; }
+.sum-card .s-val { font-size: 18px; font-weight: 700; font-family: var(--mono); color: var(--text); letter-spacing: -0.5px; }
+.sum-card .s-sub { font-size: 10px; color: var(--text3); margin-top: 3px; }
+.sum-card.accent .s-val { color: var(--accent); }
+.sum-card.warn .s-val { color: var(--accent2); }
+
+/* Charts */
+.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+@media (max-width: 640px) { .chart-grid { grid-template-columns: 1fr; } }
+.chart-wrap { position: relative; height: 220px; }
+
+/* Tabs */
+.tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 0; }
+.tab-btn { padding: 10px 18px; font-size: 13px; font-family: var(--sans); cursor: pointer; border: none; background: none; color: var(--text2); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s; }
+.tab-btn.active { color: var(--accent); font-weight: 700; border-bottom-color: var(--accent); }
+.tab-btn:hover:not(.active) { color: var(--text); }
+
+/* Table */
+.tbl-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.tbl-wrap { overflow-x: auto; max-height: 460px; overflow-y: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+thead th { position: sticky; top: 0; background: #1a1814; color: #fff; padding: 9px 10px; text-align: right; font-weight: 500; font-size: 11px; white-space: nowrap; z-index: 1; }
+thead th:first-child, thead th:nth-child(2) { text-align: center; }
+tbody td { padding: 7px 10px; border-bottom: 1px solid var(--border); text-align: right; color: var(--text); white-space: nowrap; font-family: var(--mono); font-size: 12px; }
+tbody td:first-child, tbody td:nth-child(2) { text-align: center; font-family: var(--sans); color: var(--text2); }
+tbody td:last-child { font-family: var(--sans); font-size: 11px; }
+tbody tr:hover td { background: var(--surface2); }
+tbody tr.rc-row td { background: var(--rate-change); }
+tbody tr.pp-row td { background: var(--prepay); }
+.rate-badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 500; font-family: var(--sans); }
+.note-tag { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; }
+.note-rc { background: #dbeafe; color: #1e40af; }
+.note-pp { background: #fef3c7; color: #92400e; }
+
+/* Toast */
+.toast { position: fixed; bottom: 24px; right: 24px; background: #1a1814; color: #fff; padding: 11px 20px; border-radius: 10px; font-size: 13px; z-index: 9999; opacity: 0; transform: translateY(8px); transition: all 0.25s; pointer-events: none; }
+.toast.show { opacity: 1; transform: translateY(0); }
+
+/* Divider */
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+.loading { text-align: center; padding: 20px; color: var(--text3); font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>주담대 <span>스케줄러</span></h1>
+    <span style="font-size:11px;color:var(--text3)">원리금균등상환 · 변동금리 · 중도상환</span>
+  </div>
+
+  <!-- Cloud Save Bar -->
+  <div class="cloud-bar">
+    <span class="label">저장 목록</span>
+    <div class="save-list" id="save-list"><span class="cloud-status">불러오는 중...</span></div>
+    <div class="cloud-actions">
+      <div class="save-input-row">
+        <input type="text" id="save-name" placeholder="이름 입력 (예: 우리집 대출)">
+        <button class="btn primary" onclick="saveToCloud()">저장</button>
+      </div>
+    </div>
+  </div>
+  <div style="text-align:right;margin-top:-12px;margin-bottom:16px">
+    <span class="cloud-status" id="cloud-status"></span>
+  </div>
+
+  <!-- Top grid: inputs + summary -->
+  <div class="top-grid">
+    <!-- Input panel -->
+    <div class="card">
+      <div class="card-title">대출 정보 입력</div>
+      <div class="field"><label>대출 원금 (만원)</label><input type="number" id="principal" value="51000" step="100" oninput="recalc()"></div>
+      <div class="field"><label>최초 연 이자율 (%)</label><input type="number" id="rate" value="4.08" step="0.01" oninput="recalc()"></div>
+      <div class="field"><label>대출 기간 (년)</label><input type="number" id="years" value="30" min="1" max="40" oninput="recalc()"></div>
+      <div class="field"><label>대출 시작 연월 (YYYYMM)</label><input type="text" id="startym" value="202504" maxlength="6" oninput="recalc()"></div>
+
+      <div class="divider"></div>
+      <div class="card-title">금리 변동 이력</div>
+      <div class="mini-table-wrap">
+        <div class="mini-table-header"><span>변동 시작 연월</span><span>변경 후 금리(%)</span><span></span></div>
+        <div id="rc-rows"></div>
+        <button class="add-row-btn" onclick="addRcRow()">+ 금리 변동 추가</button>
+      </div>
+
+      <div class="divider"></div>
+      <div class="card-title">중도상환 이력</div>
+      <div class="mini-table-wrap">
+        <div class="mini-table-header"><span>상환 연월</span><span>금액 (만원)</span><span></span></div>
+        <div id="pp-rows"></div>
+        <button class="add-row-btn" onclick="addPpRow()">+ 중도상환 추가</button>
+      </div>
+    </div>
+
+    <!-- Right panel: summary + charts -->
+    <div>
+      <div class="summary-grid" id="summary-grid"></div>
+      <div class="chart-grid">
+        <div class="card" style="padding:14px">
+          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">원금 · 이자 납입 추이</div>
+          <div class="chart-wrap"><canvas id="chart1" aria-label="원금 이자 막대 차트">상환 현황</canvas></div>
+        </div>
+        <div class="card" style="padding:14px">
+          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">잔여원금 · 월납입금 추이</div>
+          <div class="chart-wrap"><canvas id="chart2" aria-label="잔여원금 꺾은선 차트">잔여원금</canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Schedule table -->
+  <div class="tbl-card">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('schedule')">월별 스케줄</button>
+      <button class="tab-btn" onclick="showTab('annual')">연도별 요약</button>
+      <button class="tab-btn" onclick="showTab('period')">금리 구간별</button>
+    </div>
+    <div class="tbl-wrap" id="tab-schedule">
+      <table><thead><tr>
+        <th style="text-align:center">회차</th><th>연월</th><th>금리</th>
+        <th>월납입금</th><th>납입원금</th><th>납입이자</th><th>잔여원금</th><th>중도상환</th><th>비고</th>
+      </tr></thead><tbody id="schedule-body"></tbody></table>
+    </div>
+    <div class="tbl-wrap" id="tab-annual" style="display:none">
+      <table><thead><tr>
+        <th style="text-align:center">연도</th><th>납입원금</th><th>납입이자</th><th>합계</th><th>연말잔여</th><th>중도상환</th><th>적용금리</th>
+      </tr></thead><tbody id="annual-body"></tbody></table>
+    </div>
+    <div class="tbl-wrap" id="tab-period" style="display:none">
+      <table><thead><tr>
+        <th>금리</th><th>기간</th><th>납입원금</th><th>납입이자</th><th>합계</th><th>시작잔여</th><th>종료잔여</th>
+      </tr></thead><tbody id="period-body"></tbody></table>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzF2BzxYDC-b2Z28OZ3EPuHMsgOHe7t1FtM-Zbgc4L6lCFy-IYdkESsn5einLciL8RC/exec';
+const RATE_COLORS = ['#2c5f8a','#c0392b','#2e7d5e','#d47a10','#6d4a9e','#0e7490'];
+let chart1Inst = null, chart2Inst = null;
+let scheduleData = [];
+let rcRowIds = [], ppRowIds = [];
+let idCounter = 1;
+
+// ── Utility ──────────────────────────────────────────────
+function fmt(n){ return Math.round(n).toLocaleString('ko-KR'); }
+function addYm(ym, m){ let y=Math.floor(ym/100), mo=ym%100; mo+=m; while(mo>12){mo-=12;y++;} while(mo<1){mo+=12;y--;} return y*100+mo; }
+function ymStr(ym){ return String(ym).slice(0,4)+'.'+String(ym).slice(4); }
+function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),2400); }
+function setStatus(msg){ document.getElementById('cloud-status').textContent=msg; }
+
+function allRates(){
+  const base = parseFloat(document.getElementById('rate').value)||4.08;
+  const extras = rcRowIds.map(id=>parseFloat(document.getElementById('rc-rate-'+id).value)).filter(r=>!isNaN(r));
+  return [...new Set([base,...extras])];
+}
+function rateColor(rate){
+  const list = allRates();
+  return RATE_COLORS[list.indexOf(rate) % RATE_COLORS.length];
+}
+
+// ── Row management ────────────────────────────────────────
+function addRcRow(ym='', r=''){
+  const id = idCounter++;
+  rcRowIds.push(id);
+  const div = document.createElement('div');
+  div.className='mini-row'; div.id='rc-row-'+id;
+  div.innerHTML=`<input type="text" id="rc-ym-${id}" placeholder="202510" maxlength="6" value="${ym}" oninput="recalc()">
+    <input type="number" id="rc-rate-${id}" placeholder="4.5" step="0.01" value="${r}" oninput="recalc()">
+    <button class="mini-del" onclick="delRow('rc',${id})">×</button>`;
+  document.getElementById('rc-rows').appendChild(div);
+  recalc();
+}
+function addPpRow(ym='', amt=''){
+  const id = idCounter++;
+  ppRowIds.push(id);
+  const div = document.createElement('div');
+  div.className='mini-row'; div.id='pp-row-'+id;
+  div.innerHTML=`<input type="text" id="pp-ym-${id}" placeholder="202712" maxlength="6" value="${ym}" oninput="recalc()">
+    <input type="number" id="pp-amt-${id}" placeholder="3000" step="100" value="${amt}" oninput="recalc()">
+    <button class="mini-del" onclick="delRow('pp',${id})">×</button>`;
+  document.getElementById('pp-rows').appendChild(div);
+  recalc();
+}
+function delRow(type, id){
+  document.getElementById((type==='rc'?'rc':'pp')+'-row-'+id)?.remove();
+  if(type==='rc') rcRowIds=rcRowIds.filter(x=>x!==id);
+  else ppRowIds=ppRowIds.filter(x=>x!==id);
+  recalc();
+}
+
+// ── Calc ─────────────────────────────────────────────────
+function calcSchedule(){
+  const P=parseFloat(document.getElementById('principal').value)||51000;
+  const baseRate=parseFloat(document.getElementById('rate').value)||4.08;
+  const Y=parseInt(document.getElementById('years').value)||30;
+  const startYm=parseInt(document.getElementById('startym').value)||202504;
+  const totalMonths=Y*12;
+
+  let changes=[{ym:startYm,rate:baseRate}];
+  rcRowIds.forEach(id=>{
+    const ym=parseInt(document.getElementById('rc-ym-'+id)?.value);
+    const r=parseFloat(document.getElementById('rc-rate-'+id)?.value);
+    if(ym&&r&&!isNaN(ym)&&!isNaN(r)) changes.push({ym,rate:r});
+  });
+  changes.sort((a,b)=>a.ym-b.ym);
+  let deduped=[]; changes.forEach(c=>{ if(deduped.length&&deduped[deduped.length-1].ym===c.ym) deduped[deduped.length-1]=c; else deduped.push(c); });
+
+  let ppMap={};
+  ppRowIds.forEach(id=>{
+    const ym=parseInt(document.getElementById('pp-ym-'+id)?.value);
+    const amt=parseFloat(document.getElementById('pp-amt-'+id)?.value);
+    if(ym&&amt&&!isNaN(ym)&&!isNaN(amt)){ if(!ppMap[ym])ppMap[ym]=0; ppMap[ym]+=amt; }
+  });
+
+  function rateAt(ym){ let r=baseRate; for(const c of deduped){ if(c.ym<=ym)r=c.rate; else break; } return r; }
+  function calcPay(bal,ar,m){ const r=ar/100/12; if(r===0)return bal/m; return bal*r*Math.pow(1+r,m)/(Math.pow(1+r,m)-1); }
+
+  let rows=[],bal=P,ym=startYm,lastRate=rateAt(startYm);
+  let payment=calcPay(bal,lastRate,totalMonths);
+
+  for(let i=0;i<totalMonths;i++){
+    if(bal<=0.01) break;
+    const thisRate=rateAt(ym);
+    const changed=(thisRate!==lastRate);
+    if(changed){ payment=calcPay(bal,thisRate,totalMonths-i); lastRate=thisRate; }
+    const r=thisRate/100/12;
+    const interest=bal*r;
+    let princ=payment-interest; if(princ>bal)princ=bal;
+    let newBal=bal-princ;
+    let ppAmt=0;
+    if(ppMap[ym]){ ppAmt=Math.min(ppMap[ym],newBal); newBal-=ppAmt; const rem=totalMonths-i-1; if(rem>0&&newBal>0.01) payment=calcPay(newBal,thisRate,rem); }
+    rows.push({month:i+1,ym,rate:thisRate,payment:Math.round(payment),principal:Math.round(princ),interest:Math.round(interest),balance:Math.round(newBal),prepay:Math.round(ppAmt),rateChanged:changed&&i>0});
+    bal=newBal; ym=addYm(ym,1); if(bal<=0.01) break;
+  }
+  return rows;
+}
+
+function recalc(){
+  scheduleData=calcSchedule();
+  const P=parseFloat(document.getElementById('principal').value)||51000;
+  const totalInterest=scheduleData.reduce((s,r)=>s+r.interest,0);
+  const totalPrepay=scheduleData.reduce((s,r)=>s+r.prepay,0);
+  const totalPayment=scheduleData.reduce((s,r)=>s+r.payment,0);
+  const rcCount=scheduleData.filter(r=>r.rateChanged).length>0?rcRowIds.filter(id=>{ const ym=parseInt(document.getElementById('rc-ym-'+id)?.value); return ym&&!isNaN(ym); }).length:0;
+  const ppCount=ppRowIds.filter(id=>{ const ym=parseInt(document.getElementById('pp-ym-'+id)?.value); return ym&&!isNaN(ym); }).length;
+
+  document.getElementById('summary-grid').innerHTML=[
+    {label:'초기 월 납입금',val:fmt(scheduleData[0]?.payment||0),sub:'만원',cls:'accent'},
+    {label:'총 납입 이자',val:fmt(totalInterest),sub:'만원',cls:'warn'},
+    {label:'총 납입액',val:fmt(totalPayment+totalPrepay),sub:'만원',cls:''},
+    {label:'실제 상환 기간',val:Math.floor(scheduleData.length/12)+'년 '+scheduleData.length%12+'개월',sub:'',cls:''},
+    {label:'금리 변동',val:rcCount+'회',sub:'',cls:''},
+    {label:'중도상환',val:ppCount+'회 / '+fmt(totalPrepay)+'만',sub:'',cls:''},
+  ].map(c=>`<div class="sum-card ${c.cls}"><div class="s-label">${c.label}</div><div class="s-val">${c.val}</div><div class="s-sub">${c.sub}</div></div>`).join('');
+
+  drawCharts();
+  drawScheduleTable();
+  drawAnnualTable();
+  drawPeriodTable();
+}
+
+function drawCharts(){
+  const stride=Math.max(1,Math.floor(scheduleData.length/48));
+  const labels=[],dP=[],dI=[],dBal=[],dPay=[];
+  for(let i=0;i<scheduleData.length;i+=stride){
+    const r=scheduleData[i];
+    labels.push(ymStr(r.ym)); dP.push(r.principal); dI.push(r.interest); dBal.push(r.balance); dPay.push(r.payment);
+  }
+  if(chart1Inst) chart1Inst.destroy();
+  chart1Inst=new Chart(document.getElementById('chart1').getContext('2d'),{
+    data:{labels,datasets:[
+      {type:'bar',label:'원금',data:dP,backgroundColor:'#2c5f8a',yAxisID:'y',stack:'s'},
+      {type:'bar',label:'이자',data:dI,backgroundColor:'#e8a84a',yAxisID:'y',stack:'s'},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{font:{size:9},maxTicksLimit:10,autoSkip:true},grid:{display:false}},
+        y:{ticks:{font:{size:9},callback:v=>fmt(v)},grid:{color:'rgba(0,0,0,0.05)'}}}},
+  });
+  if(chart2Inst) chart2Inst.destroy();
+  chart2Inst=new Chart(document.getElementById('chart2').getContext('2d'),{
+    data:{labels,datasets:[
+      {type:'line',label:'잔여원금',data:dBal,borderColor:'#2c5f8a',backgroundColor:'rgba(44,95,138,0.06)',pointRadius:0,borderWidth:2,tension:0.3,fill:true,yAxisID:'y'},
+      {type:'line',label:'월납입금',data:dPay,borderColor:'#e8a84a',backgroundColor:'transparent',pointRadius:0,borderWidth:1.5,tension:0,yAxisID:'y2',borderDash:[4,3]},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{font:{size:9},maxTicksLimit:10,autoSkip:true},grid:{display:false}},
+        y:{ticks:{font:{size:9},callback:v=>fmt(v)},grid:{color:'rgba(0,0,0,0.05)'}},
+        y2:{position:'right',ticks:{font:{size:9},callback:v=>fmt(v)},grid:{display:false}}}},
+  });
+}
+
+function drawScheduleTable(){
+  document.getElementById('schedule-body').innerHTML=scheduleData.map(r=>{
+    const c=rateColor(r.rate);
+    const badge=`<span class="rate-badge" style="background:${c}18;color:${c}">${r.rate}%</span>`;
+    let note='';
+    if(r.rateChanged) note+=`<span class="note-tag note-rc">금리변동</span> `;
+    if(r.prepay>0) note+=`<span class="note-tag note-pp">중도상환 ${fmt(r.prepay)}만</span>`;
+    return `<tr class="${r.rateChanged?'rc-row':''} ${r.prepay>0?'pp-row':''}">
+      <td>${r.month}</td><td>${ymStr(r.ym)}</td><td>${badge}</td>
+      <td>${fmt(r.payment)}</td><td>${fmt(r.principal)}</td><td>${fmt(r.interest)}</td>
+      <td>${fmt(r.balance)}</td><td>${r.prepay>0?fmt(r.prepay):'-'}</td><td>${note}</td></tr>`;
+  }).join('');
+}
+
+function drawAnnualTable(){
+  let a={};
+  scheduleData.forEach(r=>{const yr=Math.floor(r.ym/100);if(!a[yr])a[yr]={p:0,i:0,tot:0,pp:0,lb:0,rates:new Set()};a[yr].p+=r.principal;a[yr].i+=r.interest;a[yr].tot+=r.payment;a[yr].pp+=r.prepay;a[yr].lb=r.balance;a[yr].rates.add(r.rate);});
+  document.getElementById('annual-body').innerHTML=Object.entries(a).map(([yr,v])=>{
+    const rl=[...v.rates].map(r=>{const c=rateColor(r);return`<span class="rate-badge" style="background:${c}18;color:${c}">${r}%</span>`;}).join(' ');
+    return`<tr><td style="text-align:center">${yr}</td><td>${fmt(v.p)}</td><td>${fmt(v.i)}</td><td>${fmt(v.tot)}</td><td>${fmt(v.lb)}</td><td>${v.pp>0?fmt(v.pp)+'만':'-'}</td><td>${rl}</td></tr>`;
+  }).join('');
+}
+
+function drawPeriodTable(){
+  let periods=[],cur=null;
+  scheduleData.forEach(r=>{
+    if(!cur||r.rate!==cur.rate){if(cur)periods.push(cur);cur={rate:r.rate,startYm:r.ym,p:0,i:0,tot:0,startBal:r.balance+r.principal,endBal:0,months:0};}
+    cur.p+=r.principal;cur.i+=r.interest;cur.tot+=r.payment;cur.months++;cur.endBal=r.balance;
+  });
+  if(cur)periods.push(cur);
+  document.getElementById('period-body').innerHTML=periods.map(p=>{
+    const c=rateColor(p.rate);
+    return`<tr><td><span class="rate-badge" style="background:${c}18;color:${c}">${p.rate}%</span></td>
+      <td style="text-align:center">${p.months}개월 (${ymStr(p.startYm)}~)</td>
+      <td>${fmt(p.p)}</td><td>${fmt(p.i)}</td><td>${fmt(p.tot)}</td><td>${fmt(p.startBal)}</td><td>${fmt(p.endBal)}</td></tr>`;
+  }).join('');
+}
+
+function showTab(name){
+  ['schedule','annual','period'].forEach(t=>{document.getElementById('tab-'+t).style.display=(t===name?'block':'none');});
+  document.querySelectorAll('.tab-btn').forEach((el,i)=>el.classList.toggle('active',['schedule','annual','period'][i]===name));
+}
+
+// ── Cloud save ────────────────────────────────────────────
+function getState(){
+  return {
+    principal: document.getElementById('principal').value,
+    rate: document.getElementById('rate').value,
+    years: document.getElementById('years').value,
+    startym: document.getElementById('startym').value,
+    rcRows: rcRowIds.map(id=>({ ym: document.getElementById('rc-ym-'+id)?.value||'', rate: document.getElementById('rc-rate-'+id)?.value||'' })).filter(r=>r.ym||r.rate),
+    ppRows: ppRowIds.map(id=>({ ym: document.getElementById('pp-ym-'+id)?.value||'', amt: document.getElementById('pp-amt-'+id)?.value||'' })).filter(r=>r.ym||r.amt),
+  };
+}
+
+function setState(s){
+  document.getElementById('principal').value=s.principal||51000;
+  document.getElementById('rate').value=s.rate||4.08;
+  document.getElementById('years').value=s.years||30;
+  document.getElementById('startym').value=s.startym||'202504';
+  document.getElementById('rc-rows').innerHTML=''; rcRowIds=[];
+  document.getElementById('pp-rows').innerHTML=''; ppRowIds=[];
+  (s.rcRows||[]).forEach(r=>addRcRow(r.ym,r.rate));
+  (s.ppRows||[]).forEach(r=>addPpRow(r.ym,r.amt));
+  recalc();
+}
+
+async function loadSaveList(){
+  try{
+    const res=await fetch(SHEET_URL+'?action=getAll');
+    const list=await res.json();
+    renderSaveList(list);
+  }catch(e){ setStatus('목록 불러오기 실패'); }
+}
+
+function renderSaveList(list){
+  const el=document.getElementById('save-list');
+  if(!list||list.length===0){ el.innerHTML='<span class="cloud-status">저장된 항목 없음</span>'; return; }
+  el.innerHTML=list.map(item=>`
+    <div class="save-chip" onclick="loadSave('${item.id}','${item.name}')">
+      <span>${item.name}</span>
+      <span style="font-size:10px;color:var(--text3)">${(item.savedAt||'').slice(0,10)}</span>
+      <button class="chip-del" onclick="event.stopPropagation();deleteSave('${item.id}','${item.name}')">×</button>
+    </div>`).join('');
+}
+
+async function saveToCloud(){
+  const name=document.getElementById('save-name').value.trim();
+  if(!name){ toast('이름을 입력해주세요'); return; }
+  const id='save_'+Date.now();
+  const payload={ action:'save', id, name, savedAt: new Date().toISOString().slice(0,10), data: JSON.stringify(getState()) };
+  setStatus('저장 중...');
+  try{
+    await fetch(SHEET_URL,{method:'POST',body:JSON.stringify(payload)});
+    document.getElementById('save-name').value='';
+    toast(`"${name}" 저장 완료!`);
+    setStatus('');
+    loadSaveList();
+  }catch(e){ setStatus('저장 실패'); toast('저장 중 오류가 발생했어요'); }
+}
+
+async function loadSave(id, name){
+  if(!confirm(`"${name}" 데이터를 불러올까요? 현재 입력은 덮어씁니다.`)) return;
+  setStatus('불러오는 중...');
+  try{
+    const res=await fetch(SHEET_URL+'?action=get&id='+id);
+    const item=await res.json();
+    if(!item||!item.data){ toast('데이터를 찾을 수 없어요'); setStatus(''); return; }
+    setState(JSON.parse(item.data));
+    toast(`"${name}" 불러오기 완료!`);
+    setStatus('');
+  }catch(e){ setStatus('불러오기 실패'); toast('불러오는 중 오류가 발생했어요'); }
+}
+
+async function deleteSave(id, name){
+  if(!confirm(`"${name}" 를 삭제할까요?`)) return;
+  try{
+    await fetch(SHEET_URL,{method:'POST',body:JSON.stringify({action:'delete',id})});
+    toast(`"${name}" 삭제 완료`);
+    loadSaveList();
+  }catch(e){ toast('삭제 중 오류가 발생했어요'); }
+}
+
+// ── Init ─────────────────────────────────────────────────
+recalc();
+loadSaveList();
+</script>
+</body>
+</html>
